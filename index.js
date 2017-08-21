@@ -16,12 +16,25 @@ io.on( 'connection', ( socket ) => {
 
     rooms[ id ] = {}
     rooms[ id ].socket = io.of( `/${ id }` )
-    rooms[ id ].socket.on( 'connection', ( socket ) => {
-      socket.emit( 'synchronisedMobile' )
+    rooms[ id ].socket.on( 'connection', ( subsocket ) => {
+      subsocket.emit( 'synchronisedMobile' )
+
+      subsocket.on( 'disconnect', ( ) => {
+        console.log( 'disconnect', id )
+        const currentRoom = rooms[ id ].socket
+        const connectedSockets = Object.keys( currentRoom.connected )
+        connectedSockets.forEach( socketId => {
+          currentRoom.connected[ socketId ].disconnect()
+        })
+        currentRoom.removeAllListeners()
+        delete rooms[ id ]
+        delete io.nsps[ `/${ id }` ]
+      })
     })
     cb()
 
   } )
+
   
   socket.on( 'join', ( id, cb ) => {
 
